@@ -17,7 +17,7 @@ class RateMultilingual:
                 for text, audio_duration in zip(batch[text_column_name], batch["speech_duration"]):
                     phonemes = self.backend.phonemize([text], separator=self.separator)[0]
                     audio_duration = audio_duration if audio_duration != 0 else 0.01
-                    speaking_rate = len(phonemes.split()) / audio_duration
+                    speaking_rate = len(phonemes) / audio_duration
                     speaking_rates.append(speaking_rate)
                     phonemes_list.append(phonemes)
             else:
@@ -25,7 +25,7 @@ class RateMultilingual:
                     phonemes = self.backend.phonemize([text], separator=self.separator)[0]
                     sample_rate = audio["sampling_rate"]
                     audio_length = len(audio["array"].squeeze()) / sample_rate
-                    speaking_rate = len(phonemes.split()) / audio_length
+                    speaking_rate = len(phonemes) / audio_length
                     speaking_rates.append(speaking_rate)
                     phonemes_list.append(phonemes)
             batch["speaking_rate"] = speaking_rates
@@ -37,7 +37,7 @@ class RateMultilingual:
             else:
                 sample_rate = batch[audio_column_name]["sampling_rate"]
                 audio_length = len(batch[audio_column_name]["array"].squeeze()) / sample_rate
-            speaking_rate = len(phonemes.split()) / audio_length
+            speaking_rate = len(phonemes) / audio_length
             batch["speaking_rate"] = speaking_rate
             batch["phonemes"] = phonemes
         return batch
