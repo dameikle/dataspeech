@@ -1,9 +1,8 @@
 from datasets import load_dataset, Audio
 from multiprocess import set_start_method
-from dataspeech import rate_apply, pitch_apply, snr_apply, squim_apply
+from dataspeech import rate_apply, pitch_apply, snr_apply, squim_apply, RateMultilingual
 import torch
 import argparse
-
 
 if __name__ == "__main__":
     set_start_method("spawn")
@@ -25,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_workers_per_gpu_for_snr", default=1, type=int, help="Number of workers per GPU for the SNR and reverberation estimation if GPUs are available. Defaults to 1 if some are avaiable. Useful if you want multiple processes per GPUs to maximise GPU usage.")
     parser.add_argument("--apply_squim_quality_estimation", action="store_true", help="If set, will also use torchaudio-squim estimation (SI-SNR, STOI and PESQ).")
     parser.add_argument("--num_workers_per_gpu_for_squim", default=1, type=int, help="Number of workers per GPU for the SI-SNR, STOI and PESQ estimation if GPUs are available. Defaults to 1 if some are avaiable. Useful if you want multiple processes per GPUs to maximise GPU usage.")
-
+    parser.add_argument("--language", default=None, type=str, help="If specified, uses that espeak language for generating phonemes")
 
     args = parser.parse_args()
     
@@ -38,7 +37,9 @@ if __name__ == "__main__":
     text_column_name = "text" if args.rename_column else args.text_column_name
     if args.rename_column:
         dataset = dataset.rename_columns({args.audio_column_name: "audio", args.text_column_name: "text"})
-        
+
+    # If language specified, use espeak to generate phonemes
+    rate_applier = RateMultilingual(args.language) if args.language else None
 
     if args.apply_squim_quality_estimation:
         print("Compute SI-SDR, PESQ, STOI")
@@ -77,7 +78,7 @@ if __name__ == "__main__":
     print("Compute speaking rate")
     if "speech_duration" in snr_dataset[next(iter(snr_dataset.keys()))].features:    
         rate_dataset = snr_dataset.map(
-            rate_apply,
+            rate_applier.rate_apply if rate_applier is not None else rate_apply,
             with_rank=False,
             num_proc=args.cpu_num_workers,
             writer_batch_size= args.cpu_writer_batch_size,
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         )
     else:
         rate_dataset = dataset.map(
-            rate_apply,
+            rate_applier.rate_apply if rate_applier is not None else rate_apply,
             with_rank=False,
             num_proc=args.cpu_num_workers,
             writer_batch_size= args.cpu_writer_batch_size,
