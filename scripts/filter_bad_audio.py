@@ -44,6 +44,8 @@ def main():
     parser.add_argument("--num_records", type=int, default=None,
                         help="Number of records to process (optional, processes all if not specified)")
     parser.add_argument("--dry_run", action="store_true", help="Perform a dry run without saving the dataset")
+    parser.add_argument("--repo_id", type=str, required=False, help="Repos to save to")
+
 
     args = parser.parse_args()
 
